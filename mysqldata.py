@@ -5,7 +5,7 @@
 import time
 
 # 3rd Package
-from sqlalchemy import Column, String, BigInteger, DateTime
+from sqlalchemy import Column, String, BigInteger, DateTime, Table
 from sqlalchemy.ext.declarative import declarative_base
 
 # Self Package
@@ -21,7 +21,7 @@ class TimeLine(Base):
     }
 
     id                      = Column(BigInteger, primary_key=True)
-    unique_order_id         = Column(String(100))
+    unique_order_id         = Column(String(100),unique=True)
     qrcode1_generated_at    = Column(DateTime)
     qrcode1_scanned_at      = Column(DateTime)
     landingpage_opened_at   = Column(DateTime)
@@ -45,15 +45,16 @@ class TimeLine(Base):
 # Logic
 
 if __name__ == '__main__':
-    from sqlalchemy import create_engine
-    from sqlalchemy.orm import sessionmaker
-
-    mysql_session = sessionmaker(bind=create_engine(
-            'mysql+mysqlconnector://{user}:{passwd}@{host}:{port}/{database}?charset=utf8'.format(**config.mysql),
-            # convert_unicode=True,
-            # echo=True
-        )
-    )()
+    print(TimeLine.__table__.columns.keys())
+    # from sqlalchemy import create_engine
+    # from sqlalchemy.orm import sessionmaker
+    #
+    # mysql_session = sessionmaker(bind=create_engine(
+    #         'mysql+mysqlconnector://{user}:{passwd}@{host}:{port}/{database}?charset=utf8'.format(**config.mysql),
+    #         # convert_unicode=True,
+    #         # echo=True
+    #     )
+    # )()
 
     # a = TimeLine(**dict(
     # id                      = None,
