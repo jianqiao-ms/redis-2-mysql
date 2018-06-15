@@ -1,14 +1,14 @@
 {
   "redis": {
-    "host":"192.168.1.104",
+    "host":"localhost",
     "port":"6379",
     "db":12
   },
   "mysql": {
-    "host":"192.168.3.251",
+    "host":"localhost",
     "port":3306,
-    "user":"majianqiao",
-    "passwd":"jianqiaoA1!",
+    "user":"root",
+    "passwd":" ",
     "database":"warranty"
   },
   "seek": {

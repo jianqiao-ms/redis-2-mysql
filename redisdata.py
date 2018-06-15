@@ -17,10 +17,13 @@ import redis
 
 class RedisSet():
     def __init__(self, _config, _seek, _today):
-        self.conn = redis.Redis(**_config)
+        pool = redis.ConnectionPool(**_config)
+        self.conn = redis.Redis(connection_pool=pool)
+        # self.conn = redis.Redis(**_config)
+        self.redis_pipe = self.conn.pipeline(transaction=True)
         self.seek = _seek
         self.key = "{date}:uois".format(date = _today)
-        self.pkey = "{date}:uois".format(date = _today.yesterday)
+        self.pkey = "{date}:uois".format(date = _today.yesterday())
 
         self.lenth = self.len_set()
         self.uois = self.range_uois() if self.lenth<self.seek else self.range_uois(self.seek, -1)
@@ -36,6 +39,16 @@ class RedisSet():
             self.lenth+=len(yesterday_uois)
             uois.extend(yesterday_uois)
         return uois
+
+    def get_hash(self):
+        # result = list()
+        for uoi in self.uois:
+            self.redis_pipe.hgetall(uoi)
+            # result.append(self.conn.hgetall(uoi))
+        # return map(self.conn.hgetall, self.uois)
+        # map(self.redis_pipe.hgetall, self.uois)
+        result = self.redis_pipe.execute()
+        return result
 
     def get_hash_list(self, GROUPLEN=32):
         result = list()

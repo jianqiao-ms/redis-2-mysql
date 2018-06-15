@@ -23,7 +23,7 @@ mysql_conn =  create_engine(
         # echo = True
     ).connect()
 InsertSql = TimeLine.__table__.insert()
-redis_set = RedisSet(config.redis, config.seek.redis, Today())
+redis_set = RedisSet(config.redis, config.seek.redis, Today().yesterday())
 default_record = dict()
 map(lambda x:default_record.__setitem__(x,None), TimeLine.__table__.columns.keys())
 # default_record = dict(
@@ -57,7 +57,8 @@ def dump(hash):
 if __name__ == '__main__':
     start = time.time()
 
-    print(len(redis_set.get_hash_list()))
+    # print(redis_set.get_hash()[0])
+    redis_set.get_hash()
 
     # map(dump, redis_set.get_hash_list())
     # mysql_conn.close()
