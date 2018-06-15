@@ -98,6 +98,7 @@ def dump(hash_data):
 
 if __name__ == '__main__':
     start = time.time()
+    print('========{}'.format(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(start))))
 
     all_hash_data = redis_set.get_hash()
     # 原始数据处理
@@ -142,6 +143,7 @@ if __name__ == '__main__':
             monitor_rate.ALL_PROCESS_TIME += getstamp(timeline['qrcode2_generated_at']) - getstamp(timeline['qrcode1_scanned_at'])
             monitor_rate.GEN_DATA_ETIME = monitor_amount.GEN_DATA_ETIME = timeline['qrcode2_generated_at'] # 拿到最后一个全流程结束时间
 
+    monitor_amount.QR2_SCANNER_AMOUNT   = monitor_rate.QR2GEN_RATE
     monitor_rate.ALL_PROCESS_TIME       = monitor_amount.ALL_PROCESS_TIME = monitor_rate.ALL_PROCESS_TIME / monitor_rate.QR2GEN_RATE #全流程平均耗时时间
     monitor_rate.QR1GEN_SCAN_TIME       = '0' # 第一个码扫描时间与第一个码生成时间在固定时间段内平均值(数据缺失)
     monitor_rate.QR1SCAN_LANDING_TIME   = str(round(monitor_rate.QR1SCAN_LANDING_TIME/monitor_rate.LANDING_RATE, 2)) # 打开着陆页耗时
