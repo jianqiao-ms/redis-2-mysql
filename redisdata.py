@@ -47,7 +47,7 @@ class RedisSet():
         result = self.redis_pipe.execute()
 
         map(lambda x,y:x.__setitem__('unique_order_id', y), result, self.uois)
-        print('Done!Read {:10} lines data.Toke {} seconds'.format(len(self.uois), time.time()-start))
+        print('Done!Read {:10} lines data.Toke {} seconds.Now zset len {}'.format(len(self.uois), time.time()-start, self.lenth))
         return result
 
     def get_hash_list(self, GROUPLEN=32):

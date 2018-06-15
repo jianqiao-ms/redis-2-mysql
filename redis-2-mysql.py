@@ -106,8 +106,7 @@ if __name__ == '__main__':
     try:
         mysql_session.commit()
     except Exception as e:
-        print(e.__class__.__name__)
-        print(e)
+        print("{} - {}".format(e.__class__.__name__, e))
         mysql_session.rollback()
 
 
@@ -161,11 +160,15 @@ if __name__ == '__main__':
     mysql_session.add(MonitorRate(**monitor_rate))
     mysql_session.add(MonitorAmount(**monitor_amount))
 
-    mysql_session.commit()
-    mysql_conn.close()
-
-    config.seek.redis = redis_set.lenth
-    config.save()
+    try:
+        mysql_session.commit()
+    except Exception as e:
+        print("{} - {}".format(e.__class__.__name__, e))
+        mysql_session.rollback()
+    finally:
+        mysql_conn.close()
+        config.seek.redis = redis_set.lenth
+        config.save()
 
     print('All Done!Toke {} seconds'.format(time.time() - start))
 
