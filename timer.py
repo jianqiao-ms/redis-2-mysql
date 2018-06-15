@@ -22,6 +22,9 @@ def timer(function):
         print('time spent: {}'.format(__))
     return _
 
+def getstamp(str):
+    return int(time.mktime(time.strptime(str, "%Y-%m-%d %H:%M:%S")))
+
 class Today():
     def __init__(self, str=None):
         self.date = time.strftime("%Y-%m-%d", time.strptime(str, "%Y-%m-%d")) \

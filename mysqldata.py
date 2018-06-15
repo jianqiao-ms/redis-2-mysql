@@ -5,7 +5,7 @@
 import time
 
 # 3rd Package
-from sqlalchemy import Column, String, BigInteger, DateTime, Table
+from sqlalchemy import Column, String, BigInteger, DateTime, Time, Date
 from sqlalchemy.ext.declarative import declarative_base
 
 # Self Package
@@ -14,7 +14,14 @@ from config import config
 # CONST (Or consider as CONST)
 Base = declarative_base()
 
-class TimeLine(Base):
+class DBase():
+    def __repr__(self):
+        _ = ""
+        for key in self.__dict__:
+            _+="{}:{},\n ".format(key, self.__dict__[key])
+        return "<{}(\n{})>".format(self.__class__.__name__, _)
+
+class TimeLine(Base, DBase):
     __tablename__ = 'timeline_monitoring'
     __table_args__ = {
         "mysql_charset":"utf8"
@@ -34,18 +41,53 @@ class TimeLine(Base):
     create_at               = Column(DateTime)
     update_at               = Column(DateTime)
 
-    def __repr__(self):
-        _ = ""
-        for key in self.__dict__:
-            _+="{}:{},\n ".format(key, self.__dict__[key])
-        return "<{}(\n{})>".format(self.__class__.__name__, _)
+class MonitorRate(Base, DBase):
+    __tablename__ = 'insuracne_monitor_rate'
+    __table_args__ = {
+        "mysql_charset":"utf8"
+    }
+
+    id                      = Column(BigInteger, primary_key=True)
+    GEN_DATA_STIME          = Column(DateTime)
+    GEN_DATA_ETIME          = Column(DateTime)
+    LANDING_RATE            = Column(String(6))
+    REQSMS_RATE             = Column(String(6))
+    SENDSMS_RATE            = Column(String(6))
+    QR2GEN_RATE             = Column(String(6))
+    ALL_PROC_TRAN_RATE      = Column(String(6))
+    QR1GEN_SCAN_TIME        = Column(BigInteger)
+    QR1SCAN_LANDING_TIME    = Column(BigInteger)
+    LANDING_REQSMS_TIME     = Column(BigInteger)
+    REQSMS_SENDSMS_TIME     = Column(BigInteger)
+    SENDSMS_QR2GEN_TIME     = Column(BigInteger)
+    QR2SANNER_TIME          = Column(BigInteger)
+    ALL_PROCESS_TIME        = Column(BigInteger)
+    CREATE_TIME             = Column(DateTime)
+    CREATE_DATE             = Column(DateTime)
+    ENABLED                 = Column(String(1))
+
+class MonitorAmount(Base, DBase):
+    __tablename__ = 'insuracne_monitor_amount'
+    __table_args__ = {
+        "mysql_charset":"utf8"
+    }
+
+    id                      = Column(BigInteger, primary_key=True)
+    GEN_DATA_STIME          = Column(DateTime)
+    GEN_DATA_ETIME          = Column(DateTime)
+    QR1_SCANNER_AMOUNT      = Column(BigInteger)
+    QR2_SCANNER_AMOUNT      = Column(BigInteger)
+    ALL_PROCESS_TIME        = Column(BigInteger)
+    CREATE_TIME             = Column(DateTime)
+    CREATE_DATE             = Column(Date)
+    ENABLED                 = Column(String(1))
 
 # Global Arguments
 
 # Logic
 
 if __name__ == '__main__':
-    print(TimeLine.__table__.columns.keys())
+    print(TimeLine.QR2SANNER_TIME           .columns.keys())
     # from sqlalchemy import create_engine
     # from sqlalchemy.orm import sessionmaker
     #

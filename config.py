@@ -17,6 +17,10 @@ class JSONConfig(NewDict):
         super(JSONConfig, self).__init__()
         self.update(_)
 
+    def save(self):
+        with open(CONFIG_FILE, 'w') as file:
+            json.dump(self, file, indent=2)
+
 
 with open(CONFIG_FILE, 'r') as file:
     config = json.load(file, object_hook = JSONConfig)

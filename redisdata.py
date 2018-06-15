@@ -41,13 +41,13 @@ class RedisSet():
         return uois
 
     def get_hash(self):
-        # result = list()
-        for uoi in self.uois:
-            self.redis_pipe.hgetall(uoi)
-            # result.append(self.conn.hgetall(uoi))
-        # return map(self.conn.hgetall, self.uois)
-        # map(self.redis_pipe.hgetall, self.uois)
+        start = time.time()
+
+        map(self.redis_pipe.hgetall, self.uois)
         result = self.redis_pipe.execute()
+
+        map(lambda x,y:x.__setitem__('unique_order_id', y), result, self.uois)
+        print('Done!Read {:10} lines data.Toke {} seconds'.format(self.lenth, time.time()-start))
         return result
 
     def get_hash_list(self, GROUPLEN=32):
@@ -60,14 +60,12 @@ class RedisSet():
         print(endfix)
         print('================\n')
 
-        cmd = "local rst={}; for i,v in pairs(KEYS) do rst[i]=redis.call('hgetall', v) end; return rst"
+        cmd = "local rst={}; for i,v in pairs(KEYS) do rst[i]=redis.call('hgetall', v);rst['unique_order_id']=v; end; return rst"
 
         for i in range(group):
             result.extend(self.conn.eval(cmd,
                                          GROUPLEN,
                                          *self.uois[i*GROUPLEN:(i+1)*GROUPLEN]))
-            print('{:10}:{}'.format(i,len(result)))
-
         result.extend(self.conn.eval(cmd,
                                          endfix,
                                          *self.uois[group*GROUPLEN:]))
@@ -95,10 +93,13 @@ class RedisSet():
 if __name__ == '__main__':
     from config import config
     from timer import Today
-    redis_set = RedisSet(config.redis, 0, Today('2018-06-14'))
+    redis_set = RedisSet(config.redis, 0, Today())
 
     for uoi in redis_set.data:
         hash_data = redis_set.conn.hgetall(uoi)
         print(hash_data)
         for key in hash_data:
             print("{} : {}".format(key, hash_data[key]))
+
+    config.seek.redis = len(redis_set.lenth)
+
