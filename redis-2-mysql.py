@@ -109,6 +109,10 @@ if __name__ == '__main__':
         print("{} - {}".format(e.__class__.__name__, e))
         mysql_session.rollback()
 
+    # Disable old data
+    mysql_conn.execute("UPDATE `insuracne_monitor_amount` SET `ENABLED`='N'")
+    mysql_conn.execute("UPDATE `insuracne_monitor_rate` SET `ENABLED`='N'")
+
 
     # Setup MonitorAmount and MonitorRate
     monitor_rate                = default_monitor_rate
