@@ -36,7 +36,7 @@ class RedisSet():
         uois = self.conn.zrange(self.key, start, end)
         if start==0 and end == -1 and self.seek != 0:
             yesterday_uois = self.conn.zrange(self.pkey, self.seek, -1)
-            self.lenth+=len(yesterday_uois)
+            # self.lenth+=len(yesterday_uois)
             uois.extend(yesterday_uois)
         return uois
 
@@ -50,25 +50,25 @@ class RedisSet():
         print('Done!Read {:10} lines data.Toke {} seconds.Now zset len {}'.format(len(self.uois), time.time()-start, self.lenth))
         return result
 
-    def get_hash_list(self, GROUPLEN=32):
-        result = list()
-        group = int( self.lenth / GROUPLEN )
-        endfix = self.lenth % GROUPLEN
-
-        print(self.lenth)
-        print(group)
-        print(endfix)
-        print('================\n')
-
-        cmd = "local rst={}; for i,v in pairs(KEYS) do rst[i]=redis.call('hgetall', v);rst['unique_order_id']=v; end; return rst"
-
-        for i in range(group):
-            result.extend(self.conn.eval(cmd,
-                                         GROUPLEN,
-                                         *self.uois[i*GROUPLEN:(i+1)*GROUPLEN]))
-        result.extend(self.conn.eval(cmd,
-                                         endfix,
-                                         *self.uois[group*GROUPLEN:]))
+    # def get_hash_list(self, GROUPLEN=32):
+    #     result = list()
+    #     group = int( self.lenth / GROUPLEN )
+    #     endfix = self.lenth % GROUPLEN
+    #
+    #     print(self.lenth)
+    #     print(group)
+    #     print(endfix)
+    #     print('================\n')
+    #
+    #     cmd = "local rst={}; for i,v in pairs(KEYS) do rst[i]=redis.call('hgetall', v);rst['unique_order_id']=v; end; return rst"
+    #
+    #     for i in range(group):
+    #         result.extend(self.conn.eval(cmd,
+    #                                      GROUPLEN,
+    #                                      *self.uois[i*GROUPLEN:(i+1)*GROUPLEN]))
+    #     result.extend(self.conn.eval(cmd,
+    #                                      endfix,
+    #                                      *self.uois[group*GROUPLEN:]))
 
         # return self.conn.eval(cmd,
         #                              30,
@@ -88,7 +88,7 @@ class RedisSet():
         #                               "87e9219e-5461-4a65-a4e8-04e5c1922e2e", "010830cc-ff10-4920-8925-4efa2023b95f",
         #                               "5e73f3a3-0339-4218-8ccb-b6aad20dd78c", "c61fd6ef-1856-4b5b-a04b-ccc926270bf8"
         #                              )
-        return result
+        # return result
 
 if __name__ == '__main__':
     from config import config
