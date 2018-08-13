@@ -9,7 +9,7 @@ from sqlalchemy import Column, String, BigInteger, DateTime, Time, Date
 from sqlalchemy.ext.declarative import declarative_base
 
 # Self Package
-from config import config
+from config import NewDict
 
 # CONST (Or consider as CONST)
 Base = declarative_base()
@@ -35,7 +35,7 @@ class TimeLine(Base, DBase):
     sms_requested_at        = Column(DateTime)
     sms_delivered_at        = Column(DateTime)
     sms_delivered_status    = Column(String(16))
-    sms_delivered_message   = Column(String(255), default="发送成功")
+    sms_delivered_message   = Column(String(255))
     submit_at               = Column(DateTime)
     qrcode2_generated_at    = Column(DateTime)
     create_at               = Column(DateTime)
@@ -81,6 +81,43 @@ class MonitorAmount(Base, DBase):
     CREATE_TIME             = Column(DateTime)
     CREATE_DATE             = Column(Date)
     ENABLED                 = Column(String(1))
+
+default_monitor_rate = NewDict(
+    id                      = None,
+    GEN_DATA_STIME          = None,
+    GEN_DATA_ETIME          = None,
+    LANDING_RATE            = 0,
+    REQSMS_RATE             = 0,
+    SENDSMS_RATE            = 0,
+    QR2GEN_RATE             = 0,
+    ALL_PROC_TRAN_RATE      = 0,
+    QR1GEN_SCAN_TIME        = 0,
+    QR1SCAN_LANDING_TIME    = 0,
+    LANDING_REQSMS_TIME     = 0,
+    REQSMS_SENDSMS_TIME     = 0,
+    SENDSMS_QR2GEN_TIME     = 0,
+    QR2SANNER_TIME          = 0,
+    ALL_PROCESS_TIME        = 0,
+    CREATE_TIME             = None,
+    CREATE_DATE             = None,
+    ENABLED                 = None,
+)
+
+default_monitor_amount = NewDict(
+    id                      = None,
+    GEN_DATA_STIME          = None,
+    GEN_DATA_ETIME          = None,
+    QR1_SCANNER_AMOUNT      = None,
+    QR2_SCANNER_AMOUNT      = None,
+    ALL_PROCESS_TIME        = None,
+    CREATE_TIME             = None,
+    CREATE_DATE             = None,
+    ENABLED                 = None,
+)
+
+
+
+
 
 # Global Arguments
 

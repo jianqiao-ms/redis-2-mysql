@@ -4,6 +4,8 @@
 # System Package
 from __future__ import division
 import time
+import logging
+import logging.config
 
 # 3rd Package
 from sqlalchemy import create_engine
@@ -12,16 +14,37 @@ from sqlalchemy.exc import IntegrityError
 
 # Self Package
 from config import config
-from config import NewDict as dict
+
 from timer import Today
 from timer import getstamp
+
 from redisdata import RedisSet
+
 from mysqldata import TimeLine
 from mysqldata import MonitorRate
 from mysqldata import MonitorAmount
 
+from mysqldata import default_monitor_rate
+from mysqldata import default_monitor_amount
 
 # CONST (Or consider as CONST)
+# 程序运行logger
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+
+console_logger = logging.StreamHandler()
+console_logger.setLevel(logging.DEBUG)
+console_fmt = logging.Formatter('[%(asctime)s] %(levelname)-7s [%(funcName)s: %(filename)s]%(lineno)d -- %(message)s')
+console_logger.setFormatter(console_fmt)
+
+file_logger = logging.FileHandler('monitor.log')
+file_logger.setLevel(logging.INFO)
+file_fmt = logging.Formatter('[%(asctime)s] %(levelname)-7s [%(funcName)s: %(filename)s]%(lineno)d -- %(message)s')
+file_logger.setFormatter(file_fmt)
+
+logger.addHandler(console_logger)
+logger.addHandler(file_logger)
+
 sql_engine = create_engine(
         'mysql+pymysql://{user}:{passwd}@{host}:{port}/{database}?charset=utf8'.format(**config.mysql),
         # echo = True
@@ -29,65 +52,6 @@ sql_engine = create_engine(
 mysql_conn      =  sql_engine.connect()
 mysql_session   = sessionmaker(bind=sql_engine)()
 redis_set       = RedisSet(config.redis, config.seek.redis, Today())
-
-default_timeline         = dict()
-# default_monitor_rate     = dict()
-# default_monitor_amount   = dict()
-
-map(lambda x:default_timeline.__setitem__(x,None), TimeLine.__table__.columns.keys())
-# map(lambda x:default_monitor_rate.__setitem__(x,None), MonitorRate.__table__.columns.keys())
-# map(lambda x:default_monitor_amount.__setitem__(x,None), MonitorAmount.__table__.columns.keys())
-
-# default_timeline = dict(
-#     id                      = None,
-#     unique_order_id         = None,
-#     qrcode1_generated_at    = None,
-#     qrcode1_scanned_at      = None,
-#     landingpage_opened_at   = None,
-#     sms_requested_at        = None,
-#     sms_delivered_at        = None,
-#     sms_delivered_status    = None,
-#     sms_delivered_message   = None,
-#     submit_at               = None,
-#     qrcode2_generated_at    = None,
-#     create_at               = None,
-#     update_at               = None
-# )
-
-default_monitor_rate = dict(
-    id                      = None,
-    GEN_DATA_STIME          = None,
-    GEN_DATA_ETIME          = None,
-    LANDING_RATE            = 0,
-    REQSMS_RATE             = 0,
-    SENDSMS_RATE            = 0,
-    QR2GEN_RATE             = 0,
-    ALL_PROC_TRAN_RATE      = 0,
-    QR1GEN_SCAN_TIME        = 0,
-    QR1SCAN_LANDING_TIME    = 0,
-    LANDING_REQSMS_TIME     = 0,
-    REQSMS_SENDSMS_TIME     = 0,
-    SENDSMS_QR2GEN_TIME     = 0,
-    QR2SANNER_TIME          = 0,
-    ALL_PROCESS_TIME        = 0,
-    CREATE_TIME             = None,
-    CREATE_DATE             = None,
-    ENABLED                 = None,
-)
-
-default_monitor_amount = dict(
-    id                      = None,
-    GEN_DATA_STIME          = None,
-    GEN_DATA_ETIME          = None,
-    QR1_SCANNER_AMOUNT      = None,
-    QR2_SCANNER_AMOUNT      = None,
-    ALL_PROCESS_TIME        = None,
-    CREATE_TIME             = None,
-    CREATE_DATE             = None,
-    ENABLED                 = None,
-)
-
-
 
 # Class & Functions
 def dump(hash_data):
@@ -100,27 +64,34 @@ if __name__ == '__main__':
     start = time.time()
     print('========{}'.format(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(start))))
 
+    # 从redis获取原始数据
+    # redis struct
+    # {type:zset} [date]:uois => [uoi] || 相关命令zrange zcard
+    # {type:hash} [uoi] => 时间点数据 || 相关命令hget hgetall
     all_hash_data = redis_set.get_hash()
-    # 原始数据处理
+
+    # 写 timeline_monitoring 表
     map(dump, all_hash_data)
-    try:
-        mysql_session.commit()
-    except Exception as e:
-        print("{} - {}".format(e.__class__.__name__, e))
-        mysql_session.rollback()
+    # try:
+        # mysql_session.commit()
+    # except Exception as e:
+    #     print("{} - {}".format(e.__class__.__name__, e))
+    #     mysql_session.rollback()
 
     # Disable old data
     mysql_conn.execute("UPDATE `insuracne_monitor_amount` SET `ENABLED`='N'")
     mysql_conn.execute("UPDATE `insuracne_monitor_rate` SET `ENABLED`='N'")
 
 
-    # Setup MonitorAmount and MonitorRate
+    # Init MonitorAmount and MonitorRate
     monitor_rate                = default_monitor_rate
     monitor_amount              = default_monitor_amount
+
+    # Setup MonitorAmount and MonitorRate
     monitor_rate.GEN_DATA_STIME = monitor_amount.GEN_DATA_STIME = all_hash_data[0]['qrcode1_scanned_at']
     monitor_rate.ENABLED        = monitor_amount.ENABLED        = 'Y'
     monitor_rate.CREATE_TIME    = monitor_amount.CREATE_TIME    = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-    monitor_rate.CREATE_DATE    = monitor_amount.CREATE_DATE    = Today().__str__()
+    monitor_rate.CREATE_DATE    = monitor_amount.CREATE_DATE    = time.strftime("%Y-%m-%d", time.localtime())
 
     monitor_amount.QR1_SCANNER_AMOUNT = len(redis_set.uois)
     monitor_amount.QR2_SCANNER_AMOUNT = 0

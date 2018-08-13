@@ -1,7 +1,7 @@
 #! /usr/bin/python
 #-* coding: utf-8 -*
 
-import os
+import os, io
 import json
 
 CONFIG_FILE = os.path.join(os.path.dirname(__file__), 'config.json')
@@ -12,16 +12,10 @@ class NewDict(dict):
     def __setattr__(self, key, value):
         self.__setitem__(key, value)
 
-class JSONConfig(NewDict):
-    def __init__(self, _):
-        super(JSONConfig, self).__init__()
-        self.update(_)
-
-    def save(self):
-        with open(CONFIG_FILE, 'w') as file:
-            json.dump(self, file, indent=2)
-
+    def save(self, file):
+        with io.open(file, 'w', encoding='utf8') as config_file:
+            config_file.write(unicode(json.dumps(self, ensure_ascii=False, indent=2)))
 
 with open(CONFIG_FILE, 'r') as file:
-    config = json.load(file, object_hook = JSONConfig)
+    config = json.load(file, object_pairs_hook = NewDict)
 
