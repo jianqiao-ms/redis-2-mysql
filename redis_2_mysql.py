@@ -144,7 +144,7 @@ def calculate(all_hash_data):
         mysql_session.rollback()
     finally:
         mysql_conn.close()
-        config.seek.redis = all_hash_data.lenth
+        config.seek.redis = len(all_hash_data)
         config.save()
 
 if __name__ == '__main__':
