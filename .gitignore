@@ -4,4 +4,5 @@ tmp/
 *.json
 *test*
 *.log
-*.example
+config.json
+manul.py
