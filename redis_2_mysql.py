@@ -4,6 +4,7 @@
 # System Package
 from __future__ import division
 import time
+import datetime
 import logging
 import logging.config
 
@@ -13,10 +14,10 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import IntegrityError
 
 # Self Package
+from config import NewDict
 from config import config
 
 from timer import Today
-from timer import getstamp
 
 from redisdata import RedisSet
 
@@ -49,21 +50,20 @@ sql_engine = create_engine(
         'mysql+pymysql://{user}:{passwd}@{host}:{port}/{database}?charset=utf8'.format(**config.mysql),
         # echo = True
     )
-mysql_conn      =  sql_engine.connect()
-mysql_session   = sessionmaker(bind=sql_engine)()
-redis_set       = RedisSet(config.redis, config.seek.redis, Today())
+
 
 # Class & Functions
+def getstamp(str):
+    return int(time.mktime(time.strptime(str, "%Y-%m-%d %H:%M:%S")))
+
 def dump(hash_data):
     try:
         mysql_session.add(TimeLine(**hash_data))
     except IntegrityError as e:
         pass
 
-if __name__ == '__main__':
-    start = time.time()
-    print('========{}'.format(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(start))))
-
+def origin_data(date=datetime.date.today()):
+    redis_set = RedisSet(config.redis, config.seek.redis, date)
     # 从redis获取原始数据
     # redis struct
     # {type:zset} [date]:uois => [uoi] || 相关命令zrange zcard
@@ -72,28 +72,30 @@ if __name__ == '__main__':
 
     # 写 timeline_monitoring 表
     map(dump, all_hash_data)
-    # try:
-        # mysql_session.commit()
-    # except Exception as e:
-    #     print("{} - {}".format(e.__class__.__name__, e))
-    #     mysql_session.rollback()
+    try:
+        mysql_session.commit()
+    except Exception as e:
+        logger.exception(e)
+        mysql_session.rollback()
 
+    return all_hash_data
+
+def calculate(all_hash_data):
     # Disable old data
     mysql_conn.execute("UPDATE `insuracne_monitor_amount` SET `ENABLED`='N'")
     mysql_conn.execute("UPDATE `insuracne_monitor_rate` SET `ENABLED`='N'")
 
-
     # Init MonitorAmount and MonitorRate
-    monitor_rate                = default_monitor_rate
-    monitor_amount              = default_monitor_amount
+    monitor_rate                = NewDict(**default_monitor_rate)
+    monitor_amount              = NewDict(**default_monitor_amount)
 
     # Setup MonitorAmount and MonitorRate
     monitor_rate.GEN_DATA_STIME = monitor_amount.GEN_DATA_STIME = all_hash_data[0]['qrcode1_scanned_at']
     monitor_rate.ENABLED        = monitor_amount.ENABLED        = 'Y'
-    monitor_rate.CREATE_TIME    = monitor_amount.CREATE_TIME    = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-    monitor_rate.CREATE_DATE    = monitor_amount.CREATE_DATE    = time.strftime("%Y-%m-%d", time.localtime())
+    monitor_rate.CREATE_TIME    = monitor_amount.CREATE_TIME    = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    monitor_rate.CREATE_DATE    = monitor_amount.CREATE_DATE    = datetime.date.today()
 
-    monitor_amount.QR1_SCANNER_AMOUNT = len(redis_set.uois)
+    monitor_amount.QR1_SCANNER_AMOUNT = len(all_hash_data)
     monitor_amount.QR2_SCANNER_AMOUNT = 0
     monitor_amount.ALL_PROCESS_TIME   = 0
 
@@ -126,11 +128,11 @@ if __name__ == '__main__':
     monitor_rate.SENDSMS_QR2GEN_TIME    = str(round(monitor_rate.SENDSMS_QR2GEN_TIME/monitor_rate.QR2GEN_RATE, 2)) # 第二个二维码生成耗时
     monitor_rate.QR2SANNER_TIME         = '0' #扫描第二个二微码时间与生成第二个二微码时间在固定时间内平均值(数据缺失)
 
-    monitor_rate.ALL_PROC_TRAN_RATE     = str(round(monitor_rate.QR2GEN_RATE/len(redis_set.uois), 2)) # 全流程转化率
+    monitor_rate.ALL_PROC_TRAN_RATE     = str(round(monitor_amount.QR2_SCANNER_AMOUNT / monitor_amount.QR1_SCANNER_AMOUNT, 2)) # 全流程转化率
     monitor_rate.QR2GEN_RATE            = str(round(monitor_rate.QR2GEN_RATE/monitor_rate.SENDSMS_RATE, 2)) # 第二个二维码生成率
     monitor_rate.SENDSMS_RATE           = str(round(monitor_rate.SENDSMS_RATE/monitor_rate.REQSMS_RATE, 2)) # 短信成功率
     monitor_rate.REQSMS_RATE            = str(round(monitor_rate.REQSMS_RATE/monitor_rate.LANDING_RATE, 2)) # 短信请求率
-    monitor_rate.LANDING_RATE           = str(round(monitor_rate.LANDING_RATE/len(redis_set.uois), 2)) # 着陆页打开率
+    monitor_rate.LANDING_RATE           = str(round(monitor_rate.LANDING_RATE/monitor_amount.QR1_SCANNER_AMOUNT, 2)) # 着陆页打开率
 
     mysql_session.add(MonitorRate(**monitor_rate))
     mysql_session.add(MonitorAmount(**monitor_amount))
@@ -142,8 +144,20 @@ if __name__ == '__main__':
         mysql_session.rollback()
     finally:
         mysql_conn.close()
-        config.seek.redis = redis_set.lenth
+        config.seek.redis = all_hash_data.lenth
         config.save()
 
-    print('All Done!Toke {} seconds'.format(time.time() - start))
+if __name__ == '__main__':
+    mysql_conn = sql_engine.connect()
+    mysql_session = sessionmaker(bind=sql_engine)()
+
+    logger.info('开始')
+    logger.info('开始处理原始数据')
+
+    all_hash_data = origin_data()
+
+    logger.info('原始数据处理完成')
+    logger.info('开始计算数据指标')
+    calculate(all_hash_data)
+    logger.info("数据指标计算完成")
 

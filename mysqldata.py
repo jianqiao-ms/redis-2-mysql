@@ -28,6 +28,7 @@ class TimeLine(Base, DBase):
     }
 
     id                      = Column(BigInteger, primary_key=True)
+    open_id                 = Column(String(32))
     unique_order_id         = Column(String(100),unique=True)
     qrcode1_generated_at    = Column(DateTime)
     qrcode1_scanned_at      = Column(DateTime)
@@ -82,7 +83,7 @@ class MonitorAmount(Base, DBase):
     CREATE_DATE             = Column(Date)
     ENABLED                 = Column(String(1))
 
-default_monitor_rate = NewDict(
+default_monitor_rate = dict(
     id                      = None,
     GEN_DATA_STIME          = None,
     GEN_DATA_ETIME          = None,

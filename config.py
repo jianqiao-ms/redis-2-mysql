@@ -12,10 +12,11 @@ class NewDict(dict):
     def __setattr__(self, key, value):
         self.__setitem__(key, value)
 
-    def save(self, file):
-        with io.open(file, 'w', encoding='utf8') as config_file:
+class Config(NewDict):
+    def save(self):
+        with io.open(CONFIG_FILE, 'w', encoding='utf8') as config_file:
             config_file.write(unicode(json.dumps(self, ensure_ascii=False, indent=2)))
 
 with open(CONFIG_FILE, 'r') as file:
-    config = json.load(file, object_pairs_hook = NewDict)
+    config = json.load(file, object_pairs_hook = Config)
 
