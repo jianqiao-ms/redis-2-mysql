@@ -144,7 +144,7 @@ def calculate(all_hash_data):
         mysql_session.rollback()
     finally:
         mysql_conn.close()
-        config.seek.redis = all_hash_data.lenth
+        config.seek.redis = len(all_hash_data)
         config.save()
 
 if __name__ == '__main__':
@@ -153,10 +153,9 @@ if __name__ == '__main__':
 
     logger.info('开始')
     logger.info('开始处理原始数据')
-
     all_hash_data = origin_data()
-
     logger.info('原始数据处理完成')
+
     logger.info('开始计算数据指标')
     calculate(all_hash_data)
     logger.info("数据指标计算完成")
