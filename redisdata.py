@@ -1,8 +1,7 @@
 #! /usr/bin/python
-#-* coding: utf-8 -*
+# -* coding: utf-8 -*
 
 # System Package
-import time
 import logging
 import datetime
 
@@ -10,6 +9,7 @@ import datetime
 import redis
 
 # Self Package
+from config import config
 
 # CONST (Or consider as CONST)
 
@@ -18,52 +18,39 @@ import redis
 # Logic
 logger = logging.getLogger()
 
-class RedisSet():
-    def __init__(self, _config, _seek, _today = datetime.date.today()):
-        pool = redis.ConnectionPool(**_config)
-        self.conn = redis.Redis(connection_pool=pool)
-        # self.conn = redis.Redis(**_config)
-        self.redis_pipe = self.conn.pipeline(transaction=True)
-        self.seek = _seek
-        self.key = "{date}:uois".format(date = _today)
-        self.pkey = "{date}:uois".format(date = (_today - datetime.timedelta(days=1)))
+class RedisHandler():
+    def __init__(self):
+        self.conn = redis.Redis(connection_pool=redis.ConnectionPool(**config.redis))
+        self.pipe = self.conn.pipeline(transaction=True)
+        logger.info('Redis Connected')
 
-        self.lenth = self.len_set()
-        self.uois = self.range_uois() if self.lenth<self.seek else self.range_uois(self.seek, -1)
-        self.seek = self.lenth
+    def get_all_hash_data(self, date, seek):
+        key = "{date}:uois".format(date = date)
+        pkey = "{date}:uois".format(date=(date - datetime.timedelta(days=1)))
+        sec_diff = (datetime.datetime.now() - datetime.datetime.combine(datetime.date.today(),
+                                                                        datetime.time.min)).total_seconds()
+        lenth = self.conn.zcard(key)
+        logger.info('获取uoi列表')
+        uois = self.conn.zrange(key, 0, -1) if lenth < seek else self.conn.zrange(key, seek, -1)
+        if sec_diff<1200:
+            uois.extend(self.conn.zrange(pkey, seek, -1))
+        logger.info('获取uoi列表完成，本次要处理{}条数据'.format(len(uois)))
 
-    def len_set(self):
-        return self.conn.zcard(self.key)
+        if len(uois) == 0:
+            return [] ,0
 
-    def range_uois(self, start=0, end=-1):
-        uois = self.conn.zrange(self.key, start, end)
-        if start==0 and end == -1 and self.seek != 0:
-            yesterday_uois = self.conn.zrange(self.pkey, self.seek, -1)
-            uois.extend(yesterday_uois)
-        return uois
+        logger.info('获取hash数据')
+        map(self.pipe.hgetall, uois)
+        all_hash_data = self.pipe.execute()
+        logger.info('获取hash数据完成')
 
-    def get_hash(self):
-        # type(result) list
-        # [dict({hgetall(uoi)})]
+        logger.info('添加uoi到hash数据')
+        map(lambda x, y: x.__setitem__('unique_order_id', y), all_hash_data, uois)
+        logger.info('添加uoi到hash数据完成')
 
-        logger.info('从redis获取原始数据')
-        map(self.redis_pipe.hgetall, self.uois)
-        result = self.redis_pipe.execute()
-        map(lambda x,y:x.__setitem__('unique_order_id', y), result, self.uois)
-        logger.info('Done!Read {:10} lines data.Now zset len {}'.format(len(self.uois), self.lenth))
+        return all_hash_data, lenth
 
-        return result
+redis_handler = RedisHandler()
 
 if __name__ == '__main__':
-    from config import config
-    from timer import Today
-    redis_set = RedisSet(config.redis, 0)
-
-    for uoi in redis_set.uois:
-        hash_data = redis_set.conn.hgetall(uoi)
-        print(hash_data)
-        for key in hash_data:
-            print("{} : {}".format(key, hash_data[key]))
-
-    config.seek.redis = len(redis_set.lenth)
-
+    pass
