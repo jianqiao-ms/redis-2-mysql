@@ -24,16 +24,16 @@ class RedisHandler():
         self.pipe = self.conn.pipeline(transaction=True)
         logger.info('Redis Connected')
 
-    def get_all_hash_data(self, date, seek):
+    def get_all_hash_data(self, date, seek, end = -1):
         key = "{date}:uois".format(date = date)
         pkey = "{date}:uois".format(date=(date - datetime.timedelta(days=1)))
         sec_diff = (datetime.datetime.now() - datetime.datetime.combine(datetime.date.today(),
                                                                         datetime.time.min)).total_seconds()
         lenth = self.conn.zcard(key)
         logger.info('获取uoi列表')
-        uois = self.conn.zrange(key, 0, -1) if lenth < seek else self.conn.zrange(key, seek, -1)
+        uois = self.conn.zrange(key, 0, end) if lenth < seek else self.conn.zrange(key, seek, end)
         if sec_diff<1200:
-            uois.extend(self.conn.zrange(pkey, seek, -1))
+            uois.extend(self.conn.zrange(pkey, seek, end))
         logger.info('获取uoi列表完成，本次要处理{}条数据'.format(len(uois)))
 
         if len(uois) == 0:

@@ -55,6 +55,11 @@ default_monitor_amount = NewDict(
 )
 
 # Class & Functions
+def idivision(a, b):
+    if b == 0:
+        return '0'
+    return str(round(a / b))
+    
 def getstamp(str):
     return int(time.mktime(time.strptime(str, "%Y-%m-%d %H:%M:%S")))
 
@@ -205,23 +210,17 @@ class MySQLHandler():
         monitor_amount.QR2_SCANNER_AMOUNT = monitor_rate.QR2GEN_RATE
         monitor_rate.ALL_PROCESS_TIME = monitor_amount.ALL_PROCESS_TIME = monitor_rate.ALL_PROCESS_TIME / monitor_rate.QR2GEN_RATE  # 全流程平均耗时时间
         monitor_rate.QR1GEN_SCAN_TIME = '0'  # 第一个码扫描时间与第一个码生成时间在固定时间段内平均值(数据缺失)
-        monitor_rate.QR1SCAN_LANDING_TIME = str(
-            round(monitor_rate.QR1SCAN_LANDING_TIME / monitor_rate.LANDING_RATE, 2))  # 打开着陆页耗时
-        monitor_rate.LANDING_REQSMS_TIME = str(
-            round(monitor_rate.LANDING_REQSMS_TIME / monitor_rate.REQSMS_RATE, 2))  # 请求短信耗时
-        monitor_rate.REQSMS_SENDSMS_TIME = str(
-            round(monitor_rate.REQSMS_SENDSMS_TIME / monitor_rate.SENDSMS_RATE, 2))  # 成功发送短信耗时
-        monitor_rate.SENDSMS_QR2GEN_TIME = str(
-            round(monitor_rate.SENDSMS_QR2GEN_TIME / monitor_rate.QR2GEN_RATE, 2))  # 第二个二维码生成耗时
+        monitor_rate.QR1SCAN_LANDING_TIME = idivision(monitor_rate.QR1SCAN_LANDING_TIME / monitor_rate.LANDING_RATE, 2)  # 打开着陆页耗时
+        monitor_rate.LANDING_REQSMS_TIME = idivision(monitor_rate.LANDING_REQSMS_TIME / monitor_rate.REQSMS_RATE, 2)  # 请求短信耗时
+        monitor_rate.REQSMS_SENDSMS_TIME = idivision(monitor_rate.REQSMS_SENDSMS_TIME / monitor_rate.SENDSMS_RATE, 2)  # 成功发送短信耗时
+        monitor_rate.SENDSMS_QR2GEN_TIME = idivision(monitor_rate.SENDSMS_QR2GEN_TIME / monitor_rate.QR2GEN_RATE, 2)  # 第二个二维码生成耗时
         monitor_rate.QR2SANNER_TIME = '0'  # 扫描第二个二微码时间与生成第二个二微码时间在固定时间内平均值(数据缺失)
 
-        monitor_rate.ALL_PROC_TRAN_RATE = str(
-            round(monitor_amount.QR2_SCANNER_AMOUNT / monitor_amount.QR1_SCANNER_AMOUNT, 2))  # 全流程转化率
-        monitor_rate.QR2GEN_RATE = str(round(monitor_rate.QR2GEN_RATE / monitor_rate.SENDSMS_RATE, 2))  # 第二个二维码生成率
-        monitor_rate.SENDSMS_RATE = str(round(monitor_rate.SENDSMS_RATE / monitor_rate.REQSMS_RATE, 2))  # 短信成功率
-        monitor_rate.REQSMS_RATE = str(round(monitor_rate.REQSMS_RATE / monitor_rate.LANDING_RATE, 2))  # 短信请求率
-        monitor_rate.LANDING_RATE = str(
-            round(monitor_rate.LANDING_RATE / monitor_amount.QR1_SCANNER_AMOUNT, 2))  # 着陆页打开率
+        monitor_rate.ALL_PROC_TRAN_RATE = idivision(monitor_amount.QR2_SCANNER_AMOUNT / monitor_amount.QR1_SCANNER_AMOUNT, 2)  # 全流程转化率
+        monitor_rate.QR2GEN_RATE = idivision(monitor_rate.QR2GEN_RATE / monitor_rate.SENDSMS_RATE, 2)  # 第二个二维码生成率
+        monitor_rate.SENDSMS_RATE = idivision(monitor_rate.SENDSMS_RATE / monitor_rate.REQSMS_RATE, 2) # 短信成功率
+        monitor_rate.REQSMS_RATE = idivision(monitor_rate.REQSMS_RATE / monitor_rate.LANDING_RATE, 2)  # 短信请求率
+        monitor_rate.LANDING_RATE = idivision(monitor_rate.LANDING_RATE / monitor_amount.QR1_SCANNER_AMOUNT, 2)  # 着陆页打开率
 
         self.session.add(MonitorRate(**monitor_rate))
         self.session.add(MonitorAmount(**monitor_amount))
