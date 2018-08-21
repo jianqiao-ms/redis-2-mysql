@@ -22,7 +22,11 @@ class RedisHandler():
     def __init__(self):
         self.conn = redis.Redis(connection_pool=redis.ConnectionPool(**config.redis))
         self.pipe = self.conn.pipeline(transaction=True)
-        logger.info('Redis Connected')
+        try:
+            self.conn.time()
+            logger.info('Redis Connected')
+        except:
+            logging.exception('Redis not connected')
 
     def get_all_hash_data(self, date, seek, end = -1):
         key = "{date}:uois".format(date = date)
@@ -37,7 +41,7 @@ class RedisHandler():
         logger.info('获取uoi列表完成，本次要处理{}条数据'.format(len(uois)))
 
         if len(uois) == 0:
-            return [] ,0
+            return [] ,lenth
 
         logger.info('获取hash数据')
         map(self.pipe.hgetall, uois)

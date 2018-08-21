@@ -147,6 +147,9 @@ class MySQLHandler():
         logger.info('MySQL Connected')
 
     def insert_hash(self, all_hash_data):
+        if len(all_hash_data) == 0:
+            logger.warning('没有新数据，终止数据插入')
+            return
         logger.info('插入{}条数据'.format(len(all_hash_data)))
         map(self.session.add, map(lambda x:TimeLine(**x), all_hash_data))
         try:
@@ -159,10 +162,6 @@ class MySQLHandler():
     def calculate(self, all_hash_data):
         logger.info('开始计算数据指标')
 
-        if len(all_hash_data) == 0:
-            logger.warning('没有新数据，退出计算任务')
-            return
-
         # Disable old data
         self.conn.execute("UPDATE `insuracne_monitor_amount` SET `ENABLED`='N'")
         self.conn.execute("UPDATE `insuracne_monitor_rate` SET `ENABLED`='N'")
@@ -171,56 +170,85 @@ class MySQLHandler():
         monitor_rate = NewDict(**default_monitor_rate)
         monitor_amount = NewDict(**default_monitor_amount)
 
-        # Setup MonitorAmount and MonitorRate
-        monitor_rate.GEN_DATA_STIME = monitor_amount.GEN_DATA_STIME = all_hash_data[0]['qrcode1_scanned_at']
-        monitor_rate.ENABLED = monitor_amount.ENABLED = 'Y'
-        monitor_rate.CREATE_TIME = monitor_amount.CREATE_TIME = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        monitor_rate.CREATE_DATE = monitor_amount.CREATE_DATE = datetime.date.today()
+        monitor_amount.CREATE_DATE = monitor_rate.CREATE_DATE = datetime.date.today().strftime('%Y-%m-%d')
+        monitor_amount.CREATE_TIME = monitor_rate.CREATE_TIME = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        monitor_amount.QR1_SCANNER_AMOUNT = len(all_hash_data)
-        monitor_amount.QR2_SCANNER_AMOUNT = 0
-        monitor_amount.ALL_PROCESS_TIME = 0
+        if len(all_hash_data) == 0:
+            logger.warning('没有新数据，修改计算任务')
 
-        for timeline in all_hash_data:
-            if timeline.has_key('landingpage_opened_at'):
-                monitor_rate.LANDING_RATE += 1  # 打开页面数量
-                monitor_rate.QR1SCAN_LANDING_TIME += getstamp(timeline['landingpage_opened_at']) - getstamp(
-                    timeline['qrcode1_scanned_at'])
+            monitor_amount.GEN_DATA_STIME = monitor_amount.GEN_DATA_ETIME = \
+                monitor_rate.GEN_DATA_STIME = monitor_rate.GEN_DATA_ETIME = \
+                datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-            if timeline.has_key('sms_requested_at'):
-                monitor_rate.REQSMS_RATE += 1  # 请求短信数量
-                monitor_rate.LANDING_REQSMS_TIME += getstamp(timeline['sms_requested_at']) - getstamp(
-                    timeline['landingpage_opened_at'])
+            monitor_amount.QR1_SCANNER_AMOUNT   = \
+            monitor_amount.QR2_SCANNER_AMOUNT   = \
+            monitor_amount.ALL_PROCESS_TIME     = \
+            monitor_rate.QR1GEN_SCAN_TIME       = \
+            monitor_rate.QR1SCAN_LANDING_TIME   = \
+            monitor_rate.LANDING_REQSMS_TIME    = \
+            monitor_rate.REQSMS_SENDSMS_TIME    = \
+            monitor_rate.SENDSMS_QR2GEN_TIME    = \
+            monitor_rate.QR2SANNER_TIME         = \
+            monitor_rate.ALL_PROCESS_TIME       = 0
 
-            if timeline.has_key('sms_delivered_status') and timeline['sms_delivered_status'] == 'DELIVERED':
-                monitor_rate.SENDSMS_RATE += 1  # 短信成功数量
-                monitor_rate.REQSMS_SENDSMS_TIME += getstamp(timeline['sms_delivered_at']) - getstamp(
-                    timeline['sms_requested_at'])
+            monitor_rate.LANDING_RATE           = \
+            monitor_rate.REQSMS_RATE            = \
+            monitor_rate.SENDSMS_RATE           = \
+            monitor_rate.QR2GEN_RATE            = \
+            monitor_rate.ALL_PROC_TRAN_RATE     = 1
 
-            if timeline.has_key('qrcode2_generated_at'):  # 全流程完成
-                monitor_rate.QR2GEN_RATE += 1  # 全流程完成数量
-                monitor_rate.SENDSMS_QR2GEN_TIME += getstamp(timeline['qrcode2_generated_at']) - getstamp(
-                    timeline['submit_at'])
+            monitor_amount.ENABLED = monitor_rate.ENABLED = 'Y'
+        else:
+            # Setup MonitorAmount and MonitorRate
+            monitor_rate.GEN_DATA_STIME = monitor_amount.GEN_DATA_STIME = all_hash_data[0]['qrcode1_scanned_at']
+            monitor_rate.ENABLED = monitor_amount.ENABLED = 'Y'
+            monitor_rate.CREATE_TIME = monitor_amount.CREATE_TIME = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            monitor_rate.CREATE_DATE = monitor_amount.CREATE_DATE = datetime.date.today()
 
-                monitor_rate.ALL_PROCESS_TIME += getstamp(timeline['qrcode2_generated_at']) - getstamp(
-                    timeline['qrcode1_scanned_at'])
-                monitor_rate.GEN_DATA_ETIME = monitor_amount.GEN_DATA_ETIME = timeline[
-                    'qrcode2_generated_at']  # 拿到最后一个全流程结束时间
+            monitor_amount.QR1_SCANNER_AMOUNT = len(all_hash_data)
+            monitor_amount.QR2_SCANNER_AMOUNT = 0
+            monitor_amount.ALL_PROCESS_TIME = 0
 
-        monitor_amount.QR2_SCANNER_AMOUNT = monitor_rate.QR2GEN_RATE
-        monitor_rate.ALL_PROCESS_TIME = monitor_amount.ALL_PROCESS_TIME = idivision(monitor_rate.ALL_PROCESS_TIME , monitor_rate.QR2GEN_RATE)  # 全流程平均耗时时间
-        monitor_rate.QR1GEN_SCAN_TIME = '0'  # 第一个码扫描时间与第一个码生成时间在固定时间段内平均值(数据缺失)
-        monitor_rate.QR1SCAN_LANDING_TIME = idivision(monitor_rate.QR1SCAN_LANDING_TIME , monitor_rate.LANDING_RATE)  # 打开着陆页耗时
-        monitor_rate.LANDING_REQSMS_TIME = idivision(monitor_rate.LANDING_REQSMS_TIME , monitor_rate.REQSMS_RATE)  # 请求短信耗时
-        monitor_rate.REQSMS_SENDSMS_TIME = idivision(monitor_rate.REQSMS_SENDSMS_TIME , monitor_rate.SENDSMS_RATE)  # 成功发送短信耗时
-        monitor_rate.SENDSMS_QR2GEN_TIME = idivision(monitor_rate.SENDSMS_QR2GEN_TIME , monitor_rate.QR2GEN_RATE)  # 第二个二维码生成耗时
-        monitor_rate.QR2SANNER_TIME = '0'  # 扫描第二个二微码时间与生成第二个二微码时间在固定时间内平均值(数据缺失)
+            for timeline in all_hash_data:
+                if timeline.has_key('landingpage_opened_at'):
+                    monitor_rate.LANDING_RATE += 1  # 打开页面数量
+                    monitor_rate.QR1SCAN_LANDING_TIME += getstamp(timeline['landingpage_opened_at']) - getstamp(
+                        timeline['qrcode1_scanned_at'])
 
-        monitor_rate.ALL_PROC_TRAN_RATE = idivision(monitor_amount.QR2_SCANNER_AMOUNT , monitor_amount.QR1_SCANNER_AMOUNT)  # 全流程转化率
-        monitor_rate.QR2GEN_RATE = idivision(monitor_rate.QR2GEN_RATE , monitor_rate.SENDSMS_RATE)  # 第二个二维码生成率
-        monitor_rate.SENDSMS_RATE = idivision(monitor_rate.SENDSMS_RATE , monitor_rate.REQSMS_RATE) # 短信成功率
-        monitor_rate.REQSMS_RATE = idivision(monitor_rate.REQSMS_RATE , monitor_rate.LANDING_RATE)  # 短信请求率
-        monitor_rate.LANDING_RATE = idivision(monitor_rate.LANDING_RATE , monitor_amount.QR1_SCANNER_AMOUNT)  # 着陆页打开率
+                if timeline.has_key('sms_requested_at'):
+                    monitor_rate.REQSMS_RATE += 1  # 请求短信数量
+                    monitor_rate.LANDING_REQSMS_TIME += getstamp(timeline['sms_requested_at']) - getstamp(
+                        timeline['landingpage_opened_at'])
+
+                if timeline.has_key('sms_delivered_status') and timeline['sms_delivered_status'] == 'DELIVERED':
+                    monitor_rate.SENDSMS_RATE += 1  # 短信成功数量
+                    monitor_rate.REQSMS_SENDSMS_TIME += getstamp(timeline['sms_delivered_at']) - getstamp(
+                        timeline['sms_requested_at'])
+
+                if timeline.has_key('qrcode2_generated_at'):  # 全流程完成
+                    monitor_rate.QR2GEN_RATE += 1  # 全流程完成数量
+                    monitor_rate.SENDSMS_QR2GEN_TIME += getstamp(timeline['qrcode2_generated_at']) - getstamp(
+                        timeline['submit_at'])
+
+                    monitor_rate.ALL_PROCESS_TIME += getstamp(timeline['qrcode2_generated_at']) - getstamp(
+                        timeline['qrcode1_scanned_at'])
+                    monitor_rate.GEN_DATA_ETIME = monitor_amount.GEN_DATA_ETIME = timeline[
+                        'qrcode2_generated_at']  # 拿到最后一个全流程结束时间
+
+            monitor_amount.QR2_SCANNER_AMOUNT = monitor_rate.QR2GEN_RATE
+            monitor_rate.ALL_PROCESS_TIME = monitor_amount.ALL_PROCESS_TIME = idivision(monitor_rate.ALL_PROCESS_TIME , monitor_rate.QR2GEN_RATE)  # 全流程平均耗时时间
+            monitor_rate.QR1GEN_SCAN_TIME = '0'  # 第一个码扫描时间与第一个码生成时间在固定时间段内平均值(数据缺失)
+            monitor_rate.QR1SCAN_LANDING_TIME = idivision(monitor_rate.QR1SCAN_LANDING_TIME , monitor_rate.LANDING_RATE)  # 打开着陆页耗时
+            monitor_rate.LANDING_REQSMS_TIME = idivision(monitor_rate.LANDING_REQSMS_TIME , monitor_rate.REQSMS_RATE)  # 请求短信耗时
+            monitor_rate.REQSMS_SENDSMS_TIME = idivision(monitor_rate.REQSMS_SENDSMS_TIME , monitor_rate.SENDSMS_RATE)  # 成功发送短信耗时
+            monitor_rate.SENDSMS_QR2GEN_TIME = idivision(monitor_rate.SENDSMS_QR2GEN_TIME , monitor_rate.QR2GEN_RATE)  # 第二个二维码生成耗时
+            monitor_rate.QR2SANNER_TIME = '0'  # 扫描第二个二微码时间与生成第二个二微码时间在固定时间内平均值(数据缺失)
+
+            monitor_rate.ALL_PROC_TRAN_RATE = idivision(monitor_amount.QR2_SCANNER_AMOUNT , monitor_amount.QR1_SCANNER_AMOUNT)  # 全流程转化率
+            monitor_rate.QR2GEN_RATE = idivision(monitor_rate.QR2GEN_RATE , monitor_rate.SENDSMS_RATE)  # 第二个二维码生成率
+            monitor_rate.SENDSMS_RATE = idivision(monitor_rate.SENDSMS_RATE , monitor_rate.REQSMS_RATE) # 短信成功率
+            monitor_rate.REQSMS_RATE = idivision(monitor_rate.REQSMS_RATE , monitor_rate.LANDING_RATE)  # 短信请求率
+            monitor_rate.LANDING_RATE = idivision(monitor_rate.LANDING_RATE , monitor_amount.QR1_SCANNER_AMOUNT)  # 着陆页打开率
 
         self.session.add(MonitorRate(**monitor_rate))
         self.session.add(MonitorAmount(**monitor_amount))
