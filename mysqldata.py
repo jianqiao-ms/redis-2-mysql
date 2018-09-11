@@ -116,7 +116,7 @@ class MonitorRate(Base, DBase):
     ALL_PROCESS_TIME        = Column(BigInteger)
 
     CREATE_TIME             = Column(Date, default=datetime.date.today())
-    CREATE_DATE             = Column(Date, default=datetime.date.today())
+    CREATE_DATE             = Column(Date, default=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     ENABLED                 = Column(String(1))
 
 class MonitorAmount(Base, DBase):
