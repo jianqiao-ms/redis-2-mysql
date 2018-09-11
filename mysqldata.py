@@ -115,8 +115,8 @@ class MonitorRate(Base, DBase):
     QR2SANNER_TIME          = Column(BigInteger)
     ALL_PROCESS_TIME        = Column(BigInteger)
 
-    CREATE_TIME             = Column(DateTime, default=datetime.date.today())
-    CREATE_DATE             = Column(DateTime, default=datetime.date.today())
+    CREATE_TIME             = Column(Date, default=datetime.date.today())
+    CREATE_DATE             = Column(Date, default=datetime.date.today())
     ENABLED                 = Column(String(1))
 
 class MonitorAmount(Base, DBase):
