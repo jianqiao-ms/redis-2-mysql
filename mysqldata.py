@@ -88,8 +88,8 @@ class TimeLine(Base, DBase):
     sms_delivered_message   = Column(String(255))
     submit_at               = Column(DateTime)
     qrcode2_generated_at    = Column(DateTime)
-    create_at               = Column(DateTime)
-    update_at               = Column(DateTime)
+    create_at               = Column(DateTime, default=datetime.date.today())
+    update_at               = Column(DateTime, default=datetime.date.today())
 
 class MonitorRate(Base, DBase):
     __tablename__ = 'insuracne_monitor_rate'
@@ -115,8 +115,8 @@ class MonitorRate(Base, DBase):
     QR2SANNER_TIME          = Column(BigInteger)
     ALL_PROCESS_TIME        = Column(BigInteger)
 
-    CREATE_TIME             = Column(DateTime)
-    CREATE_DATE             = Column(DateTime)
+    CREATE_TIME             = Column(DateTime, default=datetime.date.today())
+    CREATE_DATE             = Column(DateTime, default=datetime.date.today())
     ENABLED                 = Column(String(1))
 
 class MonitorAmount(Base, DBase):
