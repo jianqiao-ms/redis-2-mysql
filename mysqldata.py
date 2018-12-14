@@ -84,10 +84,12 @@ class TimeLine(Base, DBase):
     landingpage_opened_at   = Column(DateTime)
     sms_requested_at        = Column(DateTime)
     sms_delivered_at        = Column(DateTime)
+    sms_delivered_at_hcc    = Column(DateTime)
     sms_delivered_status    = Column(String(16))
     sms_delivered_message   = Column(String(255))
     submit_at               = Column(DateTime)
     qrcode2_generated_at    = Column(DateTime)
+    qrcode2_generated_at_hcc= Column(DateTime)
     create_at               = Column(DateTime, default=datetime.date.today())
     update_at               = Column(DateTime, default=datetime.date.today())
 
