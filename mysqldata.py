@@ -224,12 +224,12 @@ class MySQLHandler():
 
                 if timeline.has_key('sms_delivered_status') and timeline['sms_delivered_status'] == 'DELIVERED':
                     monitor_rate.SENDSMS_RATE += 1  # 短信成功数量
-                    monitor_rate.REQSMS_SENDSMS_TIME += getstamp(timeline['sms_delivered_at']) - getstamp(
+                    monitor_rate.REQSMS_SENDSMS_TIME += getstamp(timeline['sms_delivered_at_hcc']) - getstamp(
                         timeline['sms_requested_at'])
 
-                if timeline.has_key('qrcode2_generated_at'):  # 全流程完成
+                if timeline.has_key('qrcode2_generated_at_hcc'):  # 全流程完成
                     monitor_rate.QR2GEN_RATE += 1  # 全流程完成数量
-                    monitor_rate.SENDSMS_QR2GEN_TIME += getstamp(timeline['qrcode2_generated_at']) - getstamp(
+                    monitor_rate.SENDSMS_QR2GEN_TIME += getstamp(timeline['qrcode2_generated_at_hcc']) - getstamp(
                         timeline['submit_at'])
 
                     monitor_rate.ALL_PROCESS_TIME += getstamp(timeline['qrcode2_generated_at']) - getstamp(
